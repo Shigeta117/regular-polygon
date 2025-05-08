@@ -65,6 +65,7 @@
             <div class="flex flex-col sm:flex-row justify-between items-center text-lg">
                 <label for="sidesSlider" class="font-medium text-gray-300 mb-2 sm:mb-0">辺の数 (N):</label>
                 <span id="sidesValue" class="font-bold text-xl text-teal-300 w-28 text-center sm:text-right bg-gray-700 px-4 py-2 rounded-md shadow">3.00</span>
+                <span id="vertexCount" class="font-bold text-sm text-teal-300 mt-2 block text-center"></span>
             </div>
             <input type="range" id="sidesSlider" min="2" max="12" value="3" step="0.05" 
                    class="w-full h-3 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-teal-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-teal-500">
@@ -110,10 +111,7 @@
 
                 const centerX = canvas.width / (2 * dpr);
                 const centerY = canvas.height / (2 * dpr);
-                const radius = Math.min(centerX, centerY) * 0.85;
                 
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
                 const n_str = sidesSlider.value;
                 const n = parseFloat(n_str);
                 sidesValueDisplay.textContent = n.toFixed(2);
@@ -124,6 +122,17 @@
                 const denominatorFixed = 100;
                 const commonDivisor = gcd(valTimes100, denominatorFixed);
                 const p = valTimes100 / commonDivisor; // 星型多角形の頂点数 (p)
+
+                // 半径の動的調整
+                const decimal = n - Math.floor(n);
+                let radiusScale = 0.85;
+                let lineWidth = 1;
+
+                // 小数点第二位が0.05付近、または辺の数が多い場合の調整
+                if ((Math.round(decimal * 20) % 2 === 1) || n > 10) {
+                    lineWidth = 0.75;     // 線を細く
+                }
+                const radius = Math.min(centerX, centerY) * radiusScale;
 
                 // 頂点の座標を計算
                 const points = [];
@@ -139,95 +148,93 @@
 
                 if (points.length < 2) return; // 描画に必要な頂点が足りない場合
 
-                // グラデーションの設定
+                // グラデーションの設定をより華やかに
                 const gradient = ctx.createLinearGradient(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
-                gradient.addColorStop(0, '#67e8f9');    // cyan-300
-                gradient.addColorStop(0.3, '#2dd4bf');  // teal-400
-                gradient.addColorStop(0.7, '#0d9488');  // teal-600
-                gradient.addColorStop(1, '#0f766e');    // teal-700
+                gradient.addColorStop(0, '#f472b6');    // pink-400
+                gradient.addColorStop(0.2, '#2dd4bf');  // teal-400
+                gradient.addColorStop(0.4, '#60a5fa');  // blue-400
+                gradient.addColorStop(0.6, '#c084fc');  // purple-400
+                gradient.addColorStop(0.8, '#34d399');  // emerald-400
+                gradient.addColorStop(1, '#fbbf24');    // amber-400
 
                 ctx.strokeStyle = gradient;
-                ctx.lineWidth = 3; // 少し太く
+                ctx.lineWidth = lineWidth; // 動的に設定された線の太さ
                 ctx.lineJoin = 'round';
                 ctx.lineCap = 'round';
 
-                // アニメーション描画の準備
-                let segmentIndex = 0;
-                let progress = 0; // 各セグメントの描画進捗 (0から1)
-                const animationSpeed = 0.05; // 1フレームあたりの進捗増加量
+                // 頂点数の表示要素を追加
+                const vertexCount = document.getElementById('vertexCount');
+                vertexCount.textContent = `頂点数: ${p}`;
 
-                function animateDrawing() {
-                    if (segmentIndex >= p) { // 全セグメント描画完了
-                        // 最後にパスを閉じる (アニメーションなしで)
-                        if (p > 1) { // 頂点が2つ以上ないとclosePathは意味がない
-                             ctx.beginPath();
-                             ctx.moveTo(points[0].x, points[0].y);
-                             for(let i=1; i<p; i++) {
-                                 ctx.lineTo(points[i].x, points[i].y);
-                             }
-                             ctx.closePath();
-                             ctx.stroke();
-                        }
-                        return;
-                    }
+                // アニメーション処理を修正
+                let startTime = null;
+                const duration = 1500; // 1.5秒
 
+                function animate(currentTime) {
+                    if (!startTime) startTime = currentTime;
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+
+                    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
                     ctx.beginPath();
-                    // これまで描画したセグメントを再描画
-                    for (let i = 0; i < segmentIndex; i++) {
-                        ctx.moveTo(points[i].x, points[i].y);
-                        ctx.lineTo(points[(i + 1) % p].x, points[(i + 1) % p].y);
+                    ctx.moveTo(points[0].x, points[0].y);
+
+                    // 進捗に応じて頂点を描画
+                    const pointsToDraw = Math.ceil(progress * points.length);
+                    for (let i = 1; i <= pointsToDraw; i++) {
+                        if (i === pointsToDraw && i < points.length) {
+                            // 最後の点は補間
+                            const lastProgress = (progress * points.length) % 1;
+                            const current = points[i - 1];
+                            const next = points[i % points.length];
+                            const x = current.x + (next.x - current.x) * lastProgress;
+                            const y = current.y + (next.y - current.y) * lastProgress;
+                            ctx.lineTo(x, y);
+                        } else {
+                            ctx.lineTo(points[i % points.length].x, points[i % points.length].y);
+                        }
                     }
-                    ctx.stroke(); // ここまでのパスを一度描画
 
-                    // 現在のセグメントを描画
-                    ctx.beginPath(); // 新しいパスを開始して現在のセグメントのみにグラデーションを適用
-                    const startPoint = points[segmentIndex];
-                    const endPoint = points[(segmentIndex + 1) % p];
-                    
-                    const currentX = startPoint.x + (endPoint.x - startPoint.x) * progress;
-                    const currentY = startPoint.y + (endPoint.y - startPoint.y) * progress;
-
-                    ctx.moveTo(startPoint.x, startPoint.y);
-                    ctx.lineTo(currentX, currentY);
+                    if (progress === 1) {
+                        ctx.closePath();
+                    }
                     ctx.stroke();
 
-                    progress += animationSpeed;
-
-                    if (progress >= 1) {
-                        progress = 0;
-                        segmentIndex++;
-                        // 最後のセグメントを描き終えたら、閉じる処理を一度だけ行う
-                        if (segmentIndex === p -1 && p > 1) { // p-1 番目のセグメント（最後から2番目の頂点から最後の頂点へ）
-                             // No special handling needed here, loop will continue to p
-                        }
-                    }
-                    
-                    // 次のフレームをリクエスト
-                    if (segmentIndex < p || (segmentIndex === p-1 && progress <1) ) { // 最後のセグメントの描画中も続ける
-                         currentAnimationFrameId = requestAnimationFrame(animateDrawing);
-                    } else if (segmentIndex === p) { // 全セグメント描画完了後、最終的な閉じた図形を描画
-                        ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr); // アニメーション中のものをクリア
-                        ctx.beginPath();
-                        ctx.moveTo(points[0].x, points[0].y);
-                        for (let i = 1; i < p; i++) {
-                            ctx.lineTo(points[i].x, points[i].y);
-                        }
-                        ctx.closePath();
-                        ctx.stroke();
+                    if (progress < 1) {
+                        currentAnimationFrameId = requestAnimationFrame(animate);
+                    } else {
+                        // アニメーション完了後、回転アニメーションを開始
+                        rotatePolygon();
                     }
                 }
-                
-                // 描画アニメーションを開始
-                animateDrawing();
-                
-                // キャンバスにちょっとしたホバーエフェクト（例：少し傾ける）
-                // canvas.onmouseenter = () => { canvas.style.transform = 'rotateY(5deg) rotateX(2deg) scale(1.02)'; }
-                // canvas.onmouseleave = () => { canvas.style.transform = 'rotateY(0deg) rotateX(0deg) scale(1)'; }
+
+                // 図形の回転アニメーション
+                let rotation = 0;
+                function rotatePolygon() {
+                    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(rotation);
+                    ctx.translate(-centerX, -centerY);
+
+                    ctx.beginPath();
+                    ctx.moveTo(points[0].x, points[0].y);
+                    for (let i = 1; i < p; i++) {
+                        ctx.lineTo(points[i].x, points[i].y);
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+
+                    ctx.restore();
+                    rotation += 0.001; // 回転速度
+                    requestAnimationFrame(rotatePolygon);
+                }
+
+                // アニメーション開始
+                currentAnimationFrameId = requestAnimationFrame(animate);
             }
 
             sidesSlider.addEventListener('input', () => {
-                // スライダー操作中は即時描画（アニメーションなし）の方が操作性が良い場合がある
-                // ここではアニメーションを維持する
                 drawPolygon();
             });
 
