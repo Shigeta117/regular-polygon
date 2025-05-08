@@ -5,247 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>N角形ジェネレーター</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* カスタムフォント (Inter) を読み込む */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            overflow: hidden; /* スクロールバーを隠して全画面感を出す */
-        }
-        /* スライダーのつまみの色をカスタマイズ */
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 24px; /* 少し大きく */
-            height: 24px; /* 少し大きく */
-            background-color: #2dd4bf; /* teal-400 */
-            border-radius: 50%;
-            cursor: pointer;
-            transition: background-color 0.2s ease-in-out;
-        }
-        input[type="range"]::-webkit-slider-thumb:hover {
-            background-color: #5eead4; /* teal-300 */
-        }
-        input[type="range"]::-moz-range-thumb {
-            width: 24px;
-            height: 24px;
-            background-color: #2dd4bf; /* teal-400 */
-            border-radius: 50%;
-            cursor: pointer;
-            border: none;
-            transition: background-color 0.2s ease-in-out;
-        }
-        input[type="range"]::-moz-range-thumb:hover {
-            background-color: #5eead4; /* teal-300 */
-        }
-        /* キャンバスのコンテナに少しアニメーションを追加 */
-        .canvas-container {
-            perspective: 1000px;
-        }
-        #polygonCanvas {
-            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4 selection:bg-teal-500 selection:text-white">
+<body class="bg-gray-900 text-white flex flex-col lg:flex-row items-center justify-center min-h-screen p-4 selection:bg-teal-500 selection:text-white">
 
-    <div class="w-full max-w-2xl bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl">
-        <header class="mb-6 sm:mb-8">
-            <h1 class="text-3xl sm:text-4xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-400 to-emerald-500">
-                N角形ジェネレーター
-            </h1>
-            <p class="text-sm text-gray-400 mt-3 text-center">スライダーでNの値を操り、魅惑の図形を創造しよう！</p>
-        </header>
-        
-        <div class="mb-6 sm:mb-8 canvas-container">
-            <canvas id="polygonCanvas" class="w-full h-64 sm:h-80 md:h-96 bg-gray-700 rounded-lg shadow-inner"></canvas>
-        </div>
-        
-        <div class="space-y-5">
-            <div class="flex flex-col sm:flex-row justify-between items-center text-lg">
-                <label for="sidesSlider" class="font-medium text-gray-300 mb-2 sm:mb-0">辺の数 (N):</label>
-                <span id="sidesValue" class="font-bold text-xl text-teal-300 w-28 text-center sm:text-right bg-gray-700 px-4 py-2 rounded-md shadow">3.00</span>
-                <span id="vertexCount" class="font-bold text-sm text-teal-300 mt-2 block text-center"></span>
+    <!-- コントロールパネル -->
+    <div class="w-full lg:w-1/4 lg:min-w-[320px] lg:mr-6 mb-6 lg:mb-0">
+        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl">
+            <header class="mb-6">
+                <h1 class="text-3xl font-black text-center lg:text-left text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-400 to-emerald-500">
+                    N角形<br class="hidden lg:block">ジェネレーター
+                </h1>
+                <p class="text-sm text-gray-400 mt-3 text-center lg:text-left">スライダーでNの値を操り、魅惑の図形を創造しよう！</p>
+            </header>
+            
+            <div class="space-y-5">
+                <div class="flex flex-col items-start text-lg">
+                    <label for="sidesSlider" class="font-medium text-gray-300 mb-2">辺の数 (N):</label>
+                    <span id="sidesValue" class="font-bold text-xl text-teal-300 w-full bg-gray-700 px-4 py-2 rounded-md shadow mb-2">3.00</span>
+                    <span id="vertexCount" class="font-bold text-sm text-teal-300"></span>
+                </div>
+                <input type="range" id="sidesSlider" min="2" max="12" value="3" step="0.05" 
+                       class="w-full h-3 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-teal-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-teal-500">
             </div>
-            <input type="range" id="sidesSlider" min="2" max="12" value="3" step="0.05" 
-                   class="w-full h-3 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-teal-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-teal-500">
+            
+            <p class="text-xs text-gray-500 mt-8">
+                Nが整数の場合は正N角形、Nが分数 (例: 2.5 = 5/2) の場合は星型正多角形 {p/q} が描画されます。<br>
+                pはNを既約分数にしたときの分子、qは分母です。
+            </p>
         </div>
-         <p class="text-xs text-gray-500 mt-8 text-center">
-            Nが整数の場合は正N角形、Nが分数 (例: 2.5 = 5/2) の場合は星型正多角形 {p/q} が描画されます。<br>
-            pはNを既約分数にしたときの分子、qは分母です。
-         </p>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const canvas = document.getElementById('polygonCanvas');
-            const ctx = canvas.getContext('2d');
-            const sidesSlider = document.getElementById('sidesSlider');
-            const sidesValueDisplay = document.getElementById('sidesValue');
+    <!-- キャンバスエリア -->
+    <div class="w-full lg:w-3/4 canvas-container">
+        <canvas id="polygonCanvas" class="w-full h-64 sm:h-80 lg:h-[80vh] bg-gray-700 rounded-lg shadow-inner"></canvas>
+    </div>
 
-            let currentAnimationFrameId = null; // アニメーションフレームIDを管理
-
-            // 最大公約数を計算する関数
-            function gcd(a, b) {
-                a = Math.abs(Math.round(a));
-                b = Math.abs(Math.round(b));
-                while (b) {
-                    let t = b;
-                    b = a % b;
-                    a = t;
-                }
-                return a;
-            }
-
-            // 多角形を描画するメイン関数
-            function drawPolygon() {
-                if (currentAnimationFrameId) {
-                    cancelAnimationFrame(currentAnimationFrameId); // 前のアニメーションをキャンセル
-                }
-
-                const dpr = window.devicePixelRatio || 1;
-                const rect = canvas.getBoundingClientRect();
-                canvas.width = rect.width * dpr;
-                canvas.height = rect.height * dpr;
-                ctx.scale(dpr, dpr);
-
-                const centerX = canvas.width / (2 * dpr);
-                const centerY = canvas.height / (2 * dpr);
-                
-                const n_str = sidesSlider.value;
-                const n = parseFloat(n_str);
-                sidesValueDisplay.textContent = n.toFixed(2);
-
-                if (n < 2) return;
-
-                const valTimes100 = Math.round(n * 100);
-                const denominatorFixed = 100;
-                const commonDivisor = gcd(valTimes100, denominatorFixed);
-                const p = valTimes100 / commonDivisor; // 星型多角形の頂点数 (p)
-
-                // 半径の動的調整
-                const decimal = n - Math.floor(n);
-                let radiusScale = 0.85;
-                let lineWidth = 1;
-
-                // 小数点第二位が0.05付近、または辺の数が多い場合の調整
-                if ((Math.round(decimal * 20) % 2 === 1) || n > 10) {
-                    lineWidth = 0.75;     // 線を細く
-                }
-                const radius = Math.min(centerX, centerY) * radiusScale;
-
-                // 頂点の座標を計算
-                const points = [];
-                const initialAngleOffset = -Math.PI / 2; // 真上から開始
-                const angleIncrement = (2 * Math.PI) / n;
-
-                for (let i = 0; i < p; i++) {
-                    const angle = initialAngleOffset + i * angleIncrement;
-                    const x = centerX + radius * Math.cos(angle);
-                    const y = centerY + radius * Math.sin(angle);
-                    points.push({ x, y });
-                }
-
-                if (points.length < 2) return; // 描画に必要な頂点が足りない場合
-
-                // グラデーションの設定をより華やかに
-                const gradient = ctx.createLinearGradient(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
-                gradient.addColorStop(0, '#f472b6');    // pink-400
-                gradient.addColorStop(0.2, '#2dd4bf');  // teal-400
-                gradient.addColorStop(0.4, '#60a5fa');  // blue-400
-                gradient.addColorStop(0.6, '#c084fc');  // purple-400
-                gradient.addColorStop(0.8, '#34d399');  // emerald-400
-                gradient.addColorStop(1, '#fbbf24');    // amber-400
-
-                ctx.strokeStyle = gradient;
-                ctx.lineWidth = lineWidth; // 動的に設定された線の太さ
-                ctx.lineJoin = 'round';
-                ctx.lineCap = 'round';
-
-                // 頂点数の表示要素を追加
-                const vertexCount = document.getElementById('vertexCount');
-                vertexCount.textContent = `頂点数: ${p}`;
-
-                // アニメーション処理を修正
-                let startTime = null;
-                const duration = 1500; // 1.5秒
-
-                function animate(currentTime) {
-                    if (!startTime) startTime = currentTime;
-                    const elapsed = currentTime - startTime;
-                    const progress = Math.min(elapsed / duration, 1);
-
-                    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
-                    ctx.beginPath();
-                    ctx.moveTo(points[0].x, points[0].y);
-
-                    // 進捗に応じて頂点を描画
-                    const pointsToDraw = Math.ceil(progress * points.length);
-                    for (let i = 1; i <= pointsToDraw; i++) {
-                        if (i === pointsToDraw && i < points.length) {
-                            // 最後の点は補間
-                            const lastProgress = (progress * points.length) % 1;
-                            const current = points[i - 1];
-                            const next = points[i % points.length];
-                            const x = current.x + (next.x - current.x) * lastProgress;
-                            const y = current.y + (next.y - current.y) * lastProgress;
-                            ctx.lineTo(x, y);
-                        } else {
-                            ctx.lineTo(points[i % points.length].x, points[i % points.length].y);
-                        }
-                    }
-
-                    if (progress === 1) {
-                        ctx.closePath();
-                    }
-                    ctx.stroke();
-
-                    if (progress < 1) {
-                        currentAnimationFrameId = requestAnimationFrame(animate);
-                    } else {
-                        // アニメーション完了後、回転アニメーションを開始
-                        rotatePolygon();
-                    }
-                }
-
-                // 図形の回転アニメーション
-                let rotation = 0;
-                function rotatePolygon() {
-                    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
-                    ctx.save();
-                    ctx.translate(centerX, centerY);
-                    ctx.rotate(rotation);
-                    ctx.translate(-centerX, -centerY);
-
-                    ctx.beginPath();
-                    ctx.moveTo(points[0].x, points[0].y);
-                    for (let i = 1; i < p; i++) {
-                        ctx.lineTo(points[i].x, points[i].y);
-                    }
-                    ctx.closePath();
-                    ctx.stroke();
-
-                    ctx.restore();
-                    rotation += 0.001; // 回転速度
-                    requestAnimationFrame(rotatePolygon);
-                }
-
-                // アニメーション開始
-                currentAnimationFrameId = requestAnimationFrame(animate);
-            }
-
-            sidesSlider.addEventListener('input', () => {
-                drawPolygon();
-            });
-
-            let resizeTimeout;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(drawPolygon, 150);
-            });
-
-            drawPolygon(); // 初期描画
-        });
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>

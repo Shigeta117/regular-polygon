@@ -1,0 +1,54 @@
+/* カスタムフォント (Inter) を読み込む */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+    overflow: hidden; /* スクロールバーを隠して全画面感を出す */
+}
+
+/* スライダーのつまみの色をカスタマイズ */
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    background-color: #2dd4bf;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    background-color: #5eead4;
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    background-color: #2dd4bf;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s ease-in-out;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+    background-color: #5eead4;
+}
+
+/* キャンバスのコンテナに少しアニメーションを追加 */
+.canvas-container {
+    perspective: 1000px;
+}
+
+#polygonCanvas {
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* PC表示時のレイアウト調整 */
+@media (min-width: 1024px) {
+    .canvas-container {
+        max-height: 90vh;
+        perspective: 2000px;
+    }
+}
